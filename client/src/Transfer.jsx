@@ -4,7 +4,7 @@ import {sha256} from 'ethereum-cryptography/sha256';
 import {toHex} from 'ethereum-cryptography/utils';
 import {secp256k1} from 'ethereum-cryptography/secp256k1.js'
 
-function Transfer({ address, setBalance, privateKey }) {
+function Transfer({ setBalance, privateKey }) {
   const [sendAmount, setSendAmount] = useState("");
   const [recipient, setRecipient] = useState("");
   const setValue = (setter) => (evt) => setter(evt.target.value);
@@ -12,17 +12,17 @@ function Transfer({ address, setBalance, privateKey }) {
   async function transfer(evt) {
     evt.preventDefault();
     const nonce = crypto.randomUUID();
-
+    const recoveryBit = 0;
     const tx = {
-        sender: address,
         amount: parseInt(sendAmount),
         recipient,
-        nonce
+        nonce,
+        recoveryBit
     };
 
     const tx_hash = toHex(sha256(Buffer.from(JSON.stringify(tx))));
 
-    const signature = secp256k1.sign(Buffer.from(tx_hash, 'hex'), Buffer.from(privateKey, 'hex')).toCompactHex();
+    const signature = secp256k1.sign(Buffer.from(tx_hash, 'hex'), Buffer.from(privateKey, 'hex')).addRecoveryBit(recoveryBit).toCompactHex();
     const data = {
         tx,
         tx_hash,

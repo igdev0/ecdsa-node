@@ -46,7 +46,7 @@ const transactions = new Map();
 
 app.post("/send", (req, res) => {
   const {tx, tx_hash, signature, nonce} = req.body;
-  const { sender, recipient, amount } = tx;
+  const { recoveryBit, recipient, amount } = tx;
   if(transactions.get(nonce)) {
     return res.status(409).send({message: 'Replay attack detected: Nonce already used'})
   }
@@ -55,10 +55,16 @@ app.post("/send", (req, res) => {
   if(hash !== tx_hash) {
     return res.status(400).send({message: "The tx does not match the hash"})
   }
+
+  // Recover sender public key
+  const sign = secp256k1.Signature.fromCompact(Buffer.from(signature, 'hex'));
+  let senderPublicKey = sign.addRecoveryBit(recoveryBit).recoverPublicKey(tx_hash);
+  senderPublicKey = senderPublicKey.toHex();
   // 2. Verify that the sender is the one who signed the tx
-  if(!secp256k1.verify(Buffer.from(signature, 'hex'), Buffer.from(tx_hash, 'hex'), Buffer.from(sender.replace("0x", ""), 'hex'))) {
+  if(!secp256k1.verify(sign, Buffer.from(tx_hash, 'hex'), senderPublicKey)) {
     return res.status(400).send({message: "Transaction failed verification"})
   }
+  const sender = `0x${senderPublicKey}`;
   // 3. If everything is alright continue
   setInitialBalance(sender);
   setInitialBalance(recipient);
