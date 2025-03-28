@@ -21,7 +21,6 @@ function Transfer({ setBalance, privateKey }) {
     };
 
     const tx_hash = toHex(sha256(Buffer.from(JSON.stringify(tx))));
-
     const signature = secp256k1.sign(Buffer.from(tx_hash, 'hex'), Buffer.from(privateKey, 'hex')).addRecoveryBit(recoveryBit).toCompactHex();
     const data = {
         tx,
