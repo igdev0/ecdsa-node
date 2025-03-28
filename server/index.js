@@ -21,10 +21,14 @@ app.get("/balance/:address", (req, res) => {
   res.send({ balance });
 });
 
+const transactions = new Map();
+
 app.post("/send", (req, res) => {
-  const {tx, tx_hash, signature} = req.body;
+  const {tx, tx_hash, signature, nonce} = req.body;
   const { sender, recipient, amount } = tx;
-  
+  if(transactions.get(nonce)) {
+    return res.status(409).send({message: 'Replay attack detected: Nonce already used'})
+  }
   // 1. Verify the integrity of the transaction
   const hash = toHex(sha256(Buffer.from(JSON.stringify(tx))));
   if(hash !== tx_hash) {
@@ -37,7 +41,7 @@ app.post("/send", (req, res) => {
   // 3. If everything is alright continue
   setInitialBalance(sender);
   setInitialBalance(recipient);
-
+  transactions.set(nonce, tx_hash);
   if (balances[sender] < amount) {
     res.status(400).send({ message: "Not enough funds!" });
   } else {

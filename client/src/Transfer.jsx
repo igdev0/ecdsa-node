@@ -12,10 +12,13 @@ function Transfer({ address, setBalance }) {
 
   async function transfer(evt) {
     evt.preventDefault();
+    const nonce = crypto.randomUUID();
+
     const tx = {
         sender: address,
         amount: parseInt(sendAmount),
         recipient,
+        nonce
     };
 
     const tx_hash = toHex(sha256(Buffer.from(JSON.stringify(tx))));
@@ -24,7 +27,8 @@ function Transfer({ address, setBalance }) {
     const data = {
         tx,
         tx_hash,
-        signature
+        signature,
+        nonce
     }
     try {
       const {
