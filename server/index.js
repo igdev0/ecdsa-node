@@ -4,20 +4,41 @@ const {sha256} = require("ethereum-cryptography/sha256");
 const cors = require("cors");
 const {toHex} = require('ethereum-cryptography/utils');
 const {secp256k1} = require("ethereum-cryptography/secp256k1")
+const env = require("dotenv");
+env.config();
 const port = 3042;
 
 app.use(cors());
 app.use(express.json());
 
-const balances = {
-  "0x038c2d2c9c2c70ee88f3328cdc667f51beaa88be6cfa582f5c7c2c80171d5cc94c": 100, // b81dbaf98598a649f1c54b6e373662245a235ea00aea694f899cc12c4ad5503f -> private key
-  "0x0264ab3fc74caf716d64af17fcc31eb96d6f602ef31c9b0a8ef0b1c9ef467b79ba": 50, // 34e9e27b9da5f14d21442ccdb7251d3d4a3bdd920a141f69e468382db3deaed0
-  "0x038c031a779003b6fbaf987fa57626008d159afb15d8c8082bca382c8ba87a1a61": 75, // fe85fa8f84f02acc5e0dd8f1dd6ea0a07b55020e34f7f35a48affc5c2d5199ed
-};
+function formatAddress(key) {
+  return `0x${key}`
+}
+
+const balances = new Map();
+
+const ENV_USERS = [{
+  address: formatAddress(process.env.ALICE_PUBLIC_KEY),
+  balance: parseInt(process.env.ALICE_WALLET_BALANCE),
+}, {
+  address: formatAddress(process.env.BOB_PUBLIC_KEY),
+  balance: parseInt(process.env.BOB_WALLET_BALANCE),
+}, {
+  address: formatAddress(process.env.JOHN_PUBLIC_KEY),
+  balance: parseInt(process.env.JOHN_WALLET_BALANCE)
+}]
+
+ENV_USERS.forEach((user, index) => {
+  if(!user.address || !user.balance) {
+    throw new Error(`Missing address or balance for env user index: ${index}`)
+  }
+
+  balances.set(user.address, user.balance);
+})
 
 app.get("/balance/:address", (req, res) => {
   const { address } = req.params;
-  const balance = balances[address] || 0;
+  const balance = balances.get(address) || 0;
   res.send({ balance });
 });
 
@@ -42,12 +63,12 @@ app.post("/send", (req, res) => {
   setInitialBalance(sender);
   setInitialBalance(recipient);
   transactions.set(nonce, tx_hash);
-  if (balances[sender] < amount) {
+  if (balances.get(sender) < amount) {
     res.status(400).send({ message: "Not enough funds!" });
   } else {
-    balances[sender] -= amount;
-    balances[recipient] += amount;
-    res.send({ balance: balances[sender] });
+    balances.set(sender, balances.get(sender) - amount);
+    balances.set(recipient, balances.get(recipient) + amount);
+    res.send({ balance: balances.get(sender) });
   }
 });
 
@@ -56,7 +77,7 @@ app.listen(port, () => {
 });
 
 function setInitialBalance(address) {
-  if (!balances[address]) {
-    balances[address] = 0;
+  if (!balances.get(address)) {
+    balances.set(address, 0);
   }
 }
