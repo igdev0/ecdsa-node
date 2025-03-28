@@ -4,10 +4,9 @@ import {sha256} from 'ethereum-cryptography/sha256';
 import {toHex} from 'ethereum-cryptography/utils';
 import {secp256k1} from 'ethereum-cryptography/secp256k1.js'
 
-function Transfer({ address, setBalance }) {
+function Transfer({ address, setBalance, privateKey }) {
   const [sendAmount, setSendAmount] = useState("");
   const [recipient, setRecipient] = useState("");
-  const [privateKey, setPrivateKey] = useState("");
   const setValue = (setter) => (evt) => setter(evt.target.value);
 
   async function transfer(evt) {
@@ -61,16 +60,6 @@ function Transfer({ address, setBalance }) {
               onChange={setValue(setRecipient)}
           ></input>
         </label>
-
-        <label>
-          Private key
-          <input
-              placeholder="Type a private key (won't be shared with backend)"
-              value={privateKey}
-              onChange={setValue(setPrivateKey)}
-          ></input>
-        </label>
-
         <input type="submit" className="button" value="Transfer"/>
       </form>
   );
