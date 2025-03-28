@@ -24,8 +24,9 @@ app.get("/balance/:address", (req, res) => {
 app.post("/send", (req, res) => {
   const {tx, tx_hash, signature} = req.body;
   const { sender, recipient, amount } = tx;
+  
+  // 1. Verify the integrity of the transaction
   const hash = toHex(sha256(Buffer.from(JSON.stringify(tx))));
-  // 1. Verify that the tx matches the tx_hash by hashing the tx
   if(hash !== tx_hash) {
     return res.status(400).send({message: "The tx does not match the hash"})
   }
